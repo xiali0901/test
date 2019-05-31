@@ -1,0 +1,147 @@
+<?php
+$dirname="css";
+session_start();
+if(isset($_POST["uname"])){
+	$dirname=$_SESSION["uname"];
+}
+
+
+if(isset($_GET["dirsrc"])){
+	$dirname=$_GET["dirsrc"];
+}
+
+
+if(isset($_POST["submit"])){
+	print_r($_FILES["file"]);
+	$obj=new uploadfile(true,"./".$dirname);
+}
+
+
+function filelist($_dir){
+	$dir=opendir($_dir);
+	$str="";
+	while($filename=readdir($dir)){
+		if($filename!="." && $filename!=".."){
+			$filename2=$_dir."/".$filename;
+			$imgsrc="";
+			if(is_dir($filename2)){
+				$imgsrc="img/file.jpg";
+				$filenames="<a href=filelist.php?dirsrc={$filename2}>{$filename}</a>";
+			}
+			else{
+				$imgsrc="img/file2.jpg";
+				$filenames=$filename;
+			}
+			$str.="<tr>";
+			$str.="<td><img src=".$imgsrc." width=30 height=30/>".$filenames."</td>";
+			$str.="<td>".getfilesize($filename2)."</td>";
+			$str.="<td>".date("Y-m-d H:i:s",filectime($filename2))."</td>";
+			$str.="<td>".date("Y-m-d H:i:s",filemtime($filename2))."</td>";
+			$str.="<td><a href=filelist.php?delsrc={$filename2}>删除</a></td>";
+			
+			$str.="</tr>";
+		}
+		
+	}
+	closedir($dir);
+	return $str;
+}
+if(isset($_GET["delsrc"])){
+	deldir($_GET["delsrc"]);
+	echo "<script>alert('删除成功');location.href='filelist.php';</script>";
+}
+function deldir($delsrc){
+	if(!file_exists($delsrc)){
+		die("不存在");
+	}
+	if(is_file($delsrc)){
+		unlink($delsrc); //如果参数是一个文件，就直接删除它
+	}
+	$dir=opendir($delsrc);
+	while($filename=readdir($dir)){
+		if($filename!="." && $filename!=".."){
+			$filename2=$delsrc."/".$filename;//这是文件夹下的路径文件
+			if(is_dir($filename2)){
+				deldir($filename2);
+			}
+			else{
+				unlink($filename2);
+			}
+		}
+	}
+	closedir($dir);
+	echo $delsrc;
+	rmdir($delsrc);//(移除目录)删除空的文件夹
+}
+
+
+function getfilesize($_file){
+	$size=filesize($_file);
+	$dw="byte";
+	if($size>=pow(2, 40)){//2的40次方
+		$size=$size/pow(2, 40);//它是多少T  以TB为单位
+		$dw="TB";
+	}
+	elseif($size>=pow(2, 30)){
+		$size=$size/pow(2, 30);
+		$dw="GB";
+	}
+	elseif($size>=pow(2, 20)){
+		$size=$size/pow(2, 20);
+		$dw="MB";
+	}
+	elseif($size>=pow(2, 10)){
+		$size=$size/pow(2, 10);
+		$dw="KB";
+	}
+	return $size.$dw;
+}
+
+if(isset($_POST["submit"])){
+	$test=$_POST["test"];
+}
+
+?>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+	</head>
+	<body>	
+			<input type="button" value="上传文件" onclick="dis(1)"/>
+			<input type="button" value="上传目录" />
+			<?php
+				echo $dirname;	
+			?>
+			<table border="1" width="100%">
+				<tr>
+					<td>文件名</td>
+					<td>文件大小</td>
+					<td>文件创建时间</td>
+					<td>文件修改时间</td>
+					<td>操作</td>
+					
+				</tr>
+				<?php
+					echo filelist($dirname);
+				?>
+			</table>
+			<div class="dd" id="dd" class="display:none">
+				<form action="filelist.php" method="post" enctype="multipart/form-data">
+					<input type="file" name="file" id="" value="" />
+					<input type="submit" name="submit" value="提交" />
+					
+				</form>
+			</div>
+	</body>
+	<script type="text/javascript">
+		function dis(a){
+			if(a==1){
+				document.getElementById("dd").style.display="block";
+			}else{
+				document.getElementById("dd").style.display="none";
+			}
+		}
+	</script>
+</html>
